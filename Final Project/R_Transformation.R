@@ -41,6 +41,14 @@ FirstWorld <- c('Air Canada',
                 'US Airways / America West',
                 'Virgin Atlantic')
 
+# Identify US airlines
+US <- c('Alaska Airlines', 
+        'American',
+        'Delta / Northwest', 
+        'Hawaiian Airlines',
+        'United / Continental', 
+        'US Airways / America West')
+
 # Add required columns
 AirlineSafetyClean <- AirlineSafetyRaw %>% 
   dplyr::mutate(airline = stringr::str_trim(airline, 'both'),
@@ -57,6 +65,9 @@ AirlineSafetyClean <- AirlineSafetyRaw %>%
                 is_firstworld = dplyr::if_else(airline %in% FirstWorld, 
                                                'Y',
                                                'N'),
+                is_usa = dplyr::if_else(airline %in% US, 
+                                        'Y',
+                                        'N'),
                 incidents_wt_85_99 = (incidents_85_99/avail_seat_km_per_week)*10^9,
                 incidents_wt_00_14 = (incidents_00_14/avail_seat_km_per_week)*10^9,
                 fatalities_wt_85_99 = (fatalities_85_99/avail_seat_km_per_week)*10^9,
@@ -71,7 +82,7 @@ AirlineSafetyClean <- AirlineSafetyRaw %>%
                 grand_total_wt = range_total_wt_85_99 + range_total_wt_00_14)
 
 # Transform data structure to long format for Power BI
-keycol <- c('airline_clean','has_regional','is_firstworld','avail_seat_km_per_week')
+keycol <- c('airline_clean','has_regional','is_firstworld','avail_seat_km_per_week', 'is_usa')
 valuecol <- c('incidents_85_99','fatal_accidents_85_99','fatalities_85_99',
               'incidents_00_14','fatal_accidents_00_14','fatalities_00_14')
 gathercol <- valuecol
@@ -90,6 +101,7 @@ AirlineSafetyLong <- AirlineSafetyClean %>%
   dplyr::select(airline,
                 has_regional,
                 is_firstworld,
+                is_usa,
                 avail_seat_km_per_week,
                 type,
                 period,
@@ -128,7 +140,7 @@ AutoFatalitiesPrep <- AutoFatalitiesRaw %>%
 
 # Create data for fatality comparison
 Fatality <- AirlineSafetyLong %>% 
-  dplyr::filter(is_firstworld == 'Y') %>% 
+  dplyr::filter(is_firstworld == 'Y' & is_usa == 'Y') %>% 
   dplyr::mutate(category = 'Airlines') %>% 
   dplyr::group_by(period, category) %>% 
   dplyr::summarise(fatalities_tot = sum(count)) %>% 
